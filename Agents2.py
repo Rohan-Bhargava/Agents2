@@ -12,14 +12,13 @@ from typing import Generator
 import requests
 
 class Agent:
-    def __init__(self, model, server, temperature:float=0.7, top_p:float=1.0, max_tokens:int=512, top_k:int=25, system_prompt:str="You are a helpful AI assistant."):
+    def __init__(self, model, server, temperature:float=0.7, top_p:float=1.0, max_tokens:int=512, top_k:int=25):
         self.model = model
         self.server = server
         self.temperature = temperature
         self.top_p = top_p
         self.max_tokens = max_tokens
         self.top_k = top_k
-        self.system_prompt = system_prompt
 
 
     # Helper function: a tiny generator that yields partial JSON objects from a stream.
@@ -41,13 +40,10 @@ class Agent:
             yield buffer.strip()
 
 
-    def agent_generate_stream(self, prompt:str, use_context_mgr_instead:bool=False, stream_timeout:int=300) -> Generator[str, None, None]:
+    def agent_generate_stream(self, messages:list, use_context_mgr_instead:bool=False, stream_timeout:int=300) -> Generator[str, None, None]:
         payload = {
             "model": self.model,
-            "messages": [
-                { "role": "system", "content": self.system_prompt },
-                { "role": "user", "content": prompt }
-            ],
+            "messages": messages,
             "temperature": self.temperature,
             "top_p": self.top_p,
             "max_tokens": self.max_tokens,
@@ -97,13 +93,10 @@ class Agent:
             sys.stderr.write(f"[ERROR] HTTP request failed: {exc}\n")
             print(exc)
     
-    def agent_generate(self, prompt:str, stream_timeout:int=300) -> str:
+    def agent_generate(self, messages:list, stream_timeout:int=300) -> str:
         payload = {
             "model": self.model,
-            "messages": [
-                { "role": "system", "content": self.system_prompt },
-                { "role": "user", "content": prompt }
-            ],
+            "messages": messages,
             "temperature": self.temperature,
             "top_p": self.top_p,
             "max_tokens": self.max_tokens,
