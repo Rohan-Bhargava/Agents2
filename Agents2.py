@@ -41,8 +41,8 @@ class Agent:
         if buffer.strip():
             yield buffer.strip()
 
-
-    def agent_generate_stream(self, messages:list, use_context_mgr_instead:bool=False, stream_timeout:int=300) -> Generator[str, None, None]:
+    #Streaming generation method - this function is VERY IMPORTANT and is the backbone of the entire Agents2 framework.
+    def agent_generate_stream(self, messages:list, use_context_mgr_instead:bool=False, timeout:int=300) -> Generator[str, None, None]:
         payload = {
             "model": self.model,
             "messages": messages,
@@ -56,7 +56,7 @@ class Agent:
         headers = {"Content-Type": "application/json"}
 
         try:
-            with requests.post(self.server, json=payload, headers=headers, stream=True, timeout=stream_timeout) as resp:
+            with requests.post(self.server, json=payload, headers=headers, stream=True, timeout=timeout) as resp:
                 resp.raise_for_status()
 
                 for line in self.json_lines_from_stream(resp):
@@ -95,7 +95,8 @@ class Agent:
             sys.stderr.write(f"[ERROR] HTTP request failed: {exc}\n")
             print(exc)
     
-    def agent_generate(self, messages:list, stream_timeout:int=300) -> str:
+    #Non-streaming generation method - this function is VERY IMPORTANT and is the backbone of the entire Agents2 framework.
+    def agent_generate(self, messages:list, timeout:int=300) -> str:
         payload = {
             "model": self.model,
             "messages": messages,
@@ -109,7 +110,7 @@ class Agent:
         headers = {"Content-Type": "application/json"}
 
         try:
-            with requests.post(self.server, json=payload, headers=headers, timeout=stream_timeout) as resp:
+            with requests.post(self.server, json=payload, headers=headers, timeout=timeout) as resp:
                 resp.raise_for_status()
                 
                 # Parse the entire JSON response at once
