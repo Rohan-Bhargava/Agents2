@@ -1,3 +1,7 @@
+'''
+Demo file for single agent chat using Agents2 framework.
+'''
+
 import Agents2
 import Interaction
 import ContextManager

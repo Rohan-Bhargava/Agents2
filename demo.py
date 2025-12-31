@@ -1,3 +1,7 @@
+'''
+Demo file for Agents2 agent streaming response.
+'''
+
 import Agents2
 
 a=Agents2.Agent("Model here","http://127.0.0.1:8080/v1/chat/completions",temperature=0.7,max_tokens=4096)

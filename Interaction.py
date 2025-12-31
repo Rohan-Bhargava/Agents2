@@ -39,3 +39,48 @@ class SingleAgentChat:
             except Exception as e:
                 print(f"Error: {e} occured.")
                 break
+
+class MultiAgentChat:
+
+    def __init__(self, roster:list, username="User", context:ContextManager.ContextManager=None, stream:bool=True, summarizer_agent=[Agents2.Agent, str], summarizer_mode:int=0):
+        self.roster=roster
+        self.username=username
+        self.context=context
+        self.stream=stream
+        self.summarizer_agent=summarizer_agent
+        self.summarizer_mode=summarizer_mode
+
+    def chat(self):
+        while True:
+            try:
+                user_cmd=input("Prompt>>>")
+                if user_cmd == "PRINT":
+                    print("Current Context Messages:")
+                    for msg in self.context.messages:
+                        print(msg)
+                else:
+                    self.context.append_to_context({"role":"user","content":user_cmd})
+                    responses=[]
+                    for agent in self.roster:
+                        try:
+                            self.context.messages[0]={"role":"system","content":agent.system_prompt}
+                            print(f"\n{agent.name} is responding...\n")
+                            if self.stream:
+                                print(f"{agent.name}: ", end="", flush=True)
+                                response = ""
+                                for chunk in agent.agent_generate_stream(messages=self.context.messages, stream_timeout=300):
+                                    print(chunk, end="", flush=True)
+                                    response += chunk
+                                responses.append(response)
+                                print("")  # Newline after streaming is done
+                            else:
+                                response=agent.agent_generate(messages=self.context.messages, stream_timeout=300)
+                                responses.append(response)
+                                print(f"{self.machinename}: {response}")
+                        except KeyboardInterrupt as k:
+                            print(f"\nSTOPPED GENERATION FOR {self.agent} BY USER INTERRUPT!")
+                    for agent, resp in zip(self.roster, responses):
+                        self.context.append_to_context({"role":"assistant","content":f"{agent.name}: {resp}"})
+            except Exception as e:
+                print(f"Error: {e} occured.")
+                break

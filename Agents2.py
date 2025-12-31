@@ -12,13 +12,15 @@ from typing import Generator
 import requests
 
 class Agent:
-    def __init__(self, model, server, temperature:float=0.7, top_p:float=1.0, max_tokens:int=512, top_k:int=25):
+    def __init__(self, model, server, name:str="", system_prompt:str="", temperature:float=0.7, top_p:float=1.0, max_tokens:int=512, top_k:int=25, ):
         self.model = model
         self.server = server
+        self.name = name
         self.temperature = temperature
         self.top_p = top_p
         self.max_tokens = max_tokens
         self.top_k = top_k
+        self.system_prompt = system_prompt
 
 
     # Helper function: a tiny generator that yields partial JSON objects from a stream.
