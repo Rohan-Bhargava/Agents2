@@ -1,6 +1,7 @@
 from multiprocessing import context
 import Agents2
 import ContextManager
+import menu
 
 '''
 Single agent chat function. Allows user to interact with one agent at a time.
@@ -17,33 +18,47 @@ class SingleAgentChat:
         self.summarizer_agent=summarizer_agent
         self.summarizer_mode=summarizer_mode
 
+    def dev_menu(self):
+            exit_menu=False
+            m=menu.Menu(items=["View Context", "Modify Context","Return", "Exit"], 
+                        actions=[self.context.view_context, self.context.modify_context, lambda:True, exit])
+            while not exit_menu:
+                print(m.display_menu())
+                exit_menu=m.select(user_choice=int(input("Select option: ")))
+            return
+
     def chat(self):
         while True:
             try:
                 #Getting user input
                 user_cmd=input("Prompt>>>")
-                self.context.append_to_context({"role":"user","content":user_cmd})
-                #Calling the agent to generate a response and accounting for streaming or non-streaming modes.
-                if self.stream:
-                    print(f"{self.machinename}: ", end="", flush=True)
-                    response = ""
-                    for chunk in self.agent.agent_generate_stream(messages=self.context.messages, timeout=300):
-                        print(chunk, end="", flush=True)
-                        response += chunk
-                    self.context.append_to_context({"role":"assistant","content":response})
-                    print("")  # Newline after streaming is done
+                if user_cmd == "/MENU":
+                    print("ENTERING MENU!")
+                    self.dev_menu()
                 else:
-                    response=self.agent.agent_generate(messages=self.context.messages, timeout=300)
-                    self.context.append_to_context({"role":"assistant","content":response})
-                    print(f"{self.machinename}: {response}")
-            #Allow user to stop generation
-            except KeyboardInterrupt as k:
-                print(f"\nSTOPPED GENERATION FOR {self.agent} BY USER INTERRUPT!")
+                    try:
+                        self.context.append_to_context({"role":"user","content":user_cmd})
+                        #Calling the agent to generate a response and accounting for streaming or non-streaming modes.
+                        if self.stream:
+                            print(f"{self.machinename}: ", end="", flush=True)
+                            response = ""
+                            for chunk in self.agent.agent_generate_stream(messages=self.context.messages, timeout=300):
+                                print(chunk, end="", flush=True)
+                                response += chunk
+                            self.context.append_to_context({"role":"assistant","content":response})
+                            print("")  # Newline after streaming is done
+                        else:
+                            response=self.agent.agent_generate(messages=self.context.messages, timeout=300)
+                            self.context.append_to_context({"role":"assistant","content":response})
+                            print(f"{self.machinename}: {response}")
+                    #Allow user to stop generation
+                    except KeyboardInterrupt as k:
+                        print(f"\nSTOPPED GENERATION FOR {self.agent} BY USER INTERRUPT!")
             #Catch all for any other exceptions
             except Exception as e:
                 print(f"Error: {e} occured.")
                 break
-
+        
 '''
 Multi agent chat function. Allows multiple agents to respond to user prompts in sequence.
 '''
@@ -57,15 +72,23 @@ class MultiAgentChat:
         self.summarizer_agent=summarizer_agent
         self.summarizer_mode=summarizer_mode
 
+    def dev_menu(self):
+            exit_menu=False
+            m=menu.Menu(items=["View Context", "Modify Context","Return", "Exit"], 
+                        actions=[self.context.view_context, self.context.modify_context, lambda:True, exit])
+            while not exit_menu:
+                print(m.display_menu())
+                exit_menu=m.select(user_choice=int(input("Select option: ")))
+            return
+
     def chat(self):
         while True:
             try:
                 #Debug feature which will be used differently in future versions
                 user_cmd=input("Prompt>>>")
-                if user_cmd == "PRINT":
-                    print("Current Context Messages:")
-                    for msg in self.context.messages:
-                        print(msg)
+                if user_cmd == "/MENU":
+                    print("ENTERING MENU!")
+                    self.dev_menu()
                 else:
                     #Getting user input
                     self.context.append_to_context({"role":"user","content":user_cmd})
@@ -117,6 +140,15 @@ class RoundTable:
         self.stream=stream
         self.summarizer_agent=summarizer_agent
         self.summarizer_mode=summarizer_mode
+
+    def dev_menu(self):
+            exit_menu=False
+            m=menu.Menu(items=["View Context", "Modify Context","Return", "Exit"], 
+                        actions=[self.context.view_context, self.context.modify_context, lambda:True, exit])
+            while not exit_menu:
+                print(m.display_menu())
+                exit_menu=m.select(user_choice=int(input("Select option: ")))
+            return
     
     '''
     Send one prompt and have agents discuss it for N turns.

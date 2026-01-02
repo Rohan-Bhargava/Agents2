@@ -18,7 +18,8 @@ cd Agents2
 # Usage
 
 Please see the various demo files that show how to use these modules.
-All demo files assume that a llama.cpp server is running a model (llama-cli.exe etc.) on localhost or 127.0.0.1 on port 8080
+All demo files assume that a llama.cpp server is running a model (llama-cli.exe etc.) on localhost or 127.0.0.1 on port 8080.
+Enter in "/MENU" to access a developer menu.
 
 # Features
 
