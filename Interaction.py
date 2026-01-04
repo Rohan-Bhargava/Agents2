@@ -1,6 +1,7 @@
 from multiprocessing import context
 import Agents2
 import ContextManager
+import RAG
 import menu
 
 '''
@@ -8,15 +9,17 @@ Single agent chat function. Allows user to interact with one agent at a time.
 '''
 class SingleAgentChat:
 
-    def __init__(self, agent:Agents2.Agent, username="User", machinename="AI", context:ContextManager.ContextManager=None, stream:bool=True, summarizer_agent=[Agents2.Agent, str], summarizer_mode:int=0):
+    def __init__(self, agent:Agents2.Agent, username="User", machinename="AI", timeout:int=300, context:ContextManager.ContextManager=None, stream:bool=True, rag_db:RAG.RAGdb=None, use_entire_context_for_RAG:bool=False, RAG_top_k:int=1, RAG_system_prompt:str=""):
         self.agent=agent
         self.username=username
         self.machinename=machinename
+        self.timeout=timeout
         self.context=context
         self.stream=stream
-        #Summarizer agents will make a return in future iterations. Leaving this in for now.
-        self.summarizer_agent=summarizer_agent
-        self.summarizer_mode=summarizer_mode
+        self.rag_db=rag_db
+        self.use_entire_context_for_RAG=use_entire_context_for_RAG 
+        self.RAG_top_k=RAG_top_k
+        self.RAG_system_prompt=RAG_system_prompt
 
     def dev_menu(self):
             exit_menu=False
@@ -37,18 +40,20 @@ class SingleAgentChat:
                     self.dev_menu()
                 else:
                     try:
+                        if self.agent.system_prompt!="":
+                            self.context.messages[0]={"role":"system","content":self.agent.system_prompt} #Set system prompt automatically if it exists
                         self.context.append_to_context({"role":"user","content":user_cmd})
                         #Calling the agent to generate a response and accounting for streaming or non-streaming modes.
                         if self.stream:
                             print(f"{self.machinename}: ", end="", flush=True)
                             response = ""
-                            for chunk in self.agent.agent_generate_stream(messages=self.context.messages, timeout=300):
+                            for chunk in self.agent.agent_generate_stream(messages=self.context.messages, timeout=self.timeout, rag_db=self.rag_db, use_entire_context_for_RAG=self.use_entire_context_for_RAG, RAG_top_k=self.RAG_top_k, RAG_system_prompt=self.RAG_system_prompt):
                                 print(chunk, end="", flush=True)
                                 response += chunk
                             self.context.append_to_context({"role":"assistant","content":response})
                             print("")  # Newline after streaming is done
                         else:
-                            response=self.agent.agent_generate(messages=self.context.messages, timeout=300)
+                            response=self.agent.agent_generate(messages=self.context.messages, timeout=self.timeout, rag_db=self.rag_db, use_entire_context_for_RAG=self.use_entire_context_for_RAG, RAG_top_k=self.RAG_top_k, RAG_system_prompt=self.RAG_system_prompt)
                             self.context.append_to_context({"role":"assistant","content":response})
                             print(f"{self.machinename}: {response}")
                     #Allow user to stop generation
@@ -64,13 +69,16 @@ Multi agent chat function. Allows multiple agents to respond to user prompts in 
 '''
 class MultiAgentChat:
 
-    def __init__(self, roster:list, username="User", context:ContextManager.ContextManager=None, stream:bool=True, summarizer_agent=[Agents2.Agent, str], summarizer_mode:int=0):
+    def __init__(self, roster:list, username="User", context:ContextManager.ContextManager=None, stream:bool=True, timeout:int=300, rag_db:RAG.RAGdb=None, use_entire_context_for_RAG:bool=False, RAG_top_k:int=1, RAG_system_prompt:str=""):
         self.roster=roster
         self.username=username
         self.context=context
         self.stream=stream
-        self.summarizer_agent=summarizer_agent
-        self.summarizer_mode=summarizer_mode
+        self.timeout=timeout
+        self.rag_db=rag_db
+        self.use_entire_context_for_RAG=use_entire_context_for_RAG 
+        self.RAG_top_k=RAG_top_k
+        self.RAG_system_prompt=RAG_system_prompt
 
     def dev_menu(self):
             exit_menu=False
@@ -106,13 +114,13 @@ class MultiAgentChat:
                             if self.stream:
                                 print(f"{agent.name}: ", end="", flush=True)
                                 response = ""
-                                for chunk in agent.agent_generate_stream(messages=self.context.messages, timeout=300):
+                                for chunk in agent.agent_generate_stream(messages=self.context.messages, timeout=self.timeout, rag_db=self.rag_db, use_entire_context_for_RAG=self.use_entire_context_for_RAG, RAG_top_k=self.RAG_top_k, RAG_system_prompt=self.RAG_system_prompt):
                                     print(chunk, end="", flush=True)
                                     response += chunk
                                 responses.append(response)
                                 print("")  # Newline after streaming is done
                             else:
-                                response=agent.agent_generate(messages=self.context.messages, timeout=300)
+                                response=agent.agent_generate(messages=self.context.messages, timeout=self.timeout, rag_db=self.rag_db, use_entire_context_for_RAG=self.use_entire_context_for_RAG, RAG_top_k=self.RAG_top_k, RAG_system_prompt=self.RAG_system_prompt)
                                 responses.append(response)
                                 print(f"{agent.name}: {response}")
                         except KeyboardInterrupt as k:
@@ -133,13 +141,16 @@ Allows agents to debate/discuss a prompt in a roundtable format for a specified 
 Set the temperature of all agents in the roster higher than usual (above 0.7) to prevent an eventual collapse into repetitive or similar responses.
 '''
 class RoundTable:
-    def __init__(self, roster:list, username="User", context:ContextManager.ContextManager=None, stream:bool=True, summarizer_agent=[Agents2.Agent, str], summarizer_mode:int=0):
+    def __init__(self, roster:list, username="User", context:ContextManager.ContextManager=None, stream:bool=True, timeout:int=300, rag_db:RAG.RAGdb=None, use_entire_context_for_RAG:bool=False, RAG_top_k:int=1, RAG_system_prompt:str=""):
         self.roster=roster
         self.username=username
         self.context=context
         self.stream=stream
-        self.summarizer_agent=summarizer_agent
-        self.summarizer_mode=summarizer_mode
+        self.timeout=timeout
+        self.rag_db=rag_db
+        self.use_entire_context_for_RAG=use_entire_context_for_RAG 
+        self.RAG_top_k=RAG_top_k
+        self.RAG_system_prompt=RAG_system_prompt
 
     def dev_menu(self):
             exit_menu=False
@@ -175,13 +186,13 @@ class RoundTable:
                     if stream:
                         print(f"{agent.name}: ", end="", flush=True)
                         response = ""
-                        for chunk in agent.agent_generate_stream(messages=self.context.messages, timeout=300):
+                        for chunk in agent.agent_generate_stream(messages=self.context.messages, timeout=self.timeout, rag_db=self.rag_db, use_entire_context_for_RAG=self.use_entire_context_for_RAG, RAG_top_k=self.RAG_top_k, RAG_system_prompt=self.RAG_system_prompt):
                             print(chunk, end="", flush=True)
                             response += chunk
                         responses.append(response)
                         print("")  # Newline after streaming is done
                     else:
-                        response=agent.agent_generate(messages=self.context.messages, timeout=300)
+                        response=agent.agent_generate(messages=self.context.messages, timeout=self.timeout, rag_db=self.rag_db, use_entire_context_for_RAG=self.use_entire_context_for_RAG, RAG_top_k=self.RAG_top_k, RAG_system_prompt=self.RAG_system_prompt)
                         responses.append(response)
                         print(f"{agent.name}: {response}")
                 except KeyboardInterrupt as k:
@@ -231,13 +242,13 @@ class RoundTable:
                                     if stream:
                                         print(f"{agent.name}: ", end="", flush=True)
                                         response = ""
-                                        for chunk in agent.agent_generate_stream(messages=self.context.messages, timeout=300):
+                                        for chunk in agent.agent_generate_stream(messages=self.context.messages, timeout=self.timeout, rag_db=self.rag_db, use_entire_context_for_RAG=self.use_entire_context_for_RAG, RAG_top_k=self.RAG_top_k, RAG_system_prompt=self.RAG_system_prompt):
                                             print(chunk, end="", flush=True)
                                             response += chunk
                                         responses.append(response)
                                         print("")  # Newline after streaming is done
                                     else:
-                                        response=agent.agent_generate(messages=self.context.messages, timeout=300)
+                                        response=agent.agent_generate(messages=self.context.messages, timeout=self.timeout, rag_db=self.rag_db, use_entire_context_for_RAG=self.use_entire_context_for_RAG, RAG_top_k=self.RAG_top_k, RAG_system_prompt=self.RAG_system_prompt)
                                         responses.append(response)
                                         print(f"{agent.name}: {response}")
                                 except KeyboardInterrupt as k:

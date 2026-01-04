@@ -51,3 +51,7 @@ Very similar to Multi Agent Chat but for each prompt the agents will discuss for
 I would recommend that each agent has their temperature set higher than usual.
 This is because as the context grows, LLMs will want to converge to a "mean" and might end up all agreeing with each other.
 If that is not the end-goal or a desired outcome, higher temperature can help mitagate, but not entirely prevent this inevitability.
+
+## RAG
+
+A barebones RAG engine is also built in and has a demo file showing its usage.

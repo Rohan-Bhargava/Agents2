@@ -10,6 +10,7 @@ import sys
 import time
 from typing import Generator
 import requests
+import RAG
 
 class Agent:
     def __init__(self, model, server, name:str="", system_prompt:str="", temperature:float=0.7, top_p:float=1.0, max_tokens:int=512, top_k:int=25, ):
@@ -42,7 +43,19 @@ class Agent:
             yield buffer.strip()
 
     #Streaming generation method - this function is VERY IMPORTANT and is the backbone of the entire Agents2 framework.
-    def agent_generate_stream(self, messages:list, use_context_mgr_instead:bool=False, timeout:int=300) -> Generator[str, None, None]:
+    def agent_generate_stream(self, messages:list, timeout:int=300, rag_db:RAG.RAGdb=None, use_entire_context_for_RAG:bool=False, RAG_top_k:int=1, RAG_system_prompt:str="") -> Generator[str, None, None]:
+        if rag_db is not None:
+            # Perform RAG retrieval
+            if use_entire_context_for_RAG:
+                #use the entire context for RAG
+                query_contents = [msg["content"] for msg in messages]
+            else:
+                #use only the latest message for RAG, usually the latest user prompt
+                query_contents = [messages[-1]["content"]]
+            retrieved_data = rag_db.inference(queries=query_contents, top_k=RAG_top_k)
+            # Add retrieved data to messages
+            messages.append({"role": "user", "content": f"{RAG_system_prompt}: {retrieved_data}"})
+
         payload = {
             "model": self.model,
             "messages": messages,
