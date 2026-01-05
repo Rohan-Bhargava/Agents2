@@ -43,7 +43,7 @@ class Agent:
             yield buffer.strip()
 
     #Streaming generation method - this function is VERY IMPORTANT and is the backbone of the entire Agents2 framework.
-    def agent_generate_stream(self, messages:list, timeout:int=300, rag_db:RAG.RAGdb=None, use_entire_context_for_RAG:bool=False, RAG_top_k:int=1, RAG_system_prompt:str="") -> Generator[str, None, None]:
+    def agent_generate_stream(self, messages:list, timeout:int=300, rag_db:RAG.RAGdb=None, use_entire_context_for_RAG:bool=False, RAG_top_k:int=1, RAG_system_prompt:str="", RAG_cutoff:float=0.50) -> Generator[str, None, None]:
         if rag_db is not None:
             # Perform RAG retrieval
             if use_entire_context_for_RAG:
@@ -52,9 +52,9 @@ class Agent:
             else:
                 #use only the latest message for RAG, usually the latest user prompt
                 query_contents = [messages[-1]["content"]]
-            retrieved_data = rag_db.inference(queries=query_contents, top_k=RAG_top_k)
-            # Add retrieved data to messages
-            messages.append({"role": "user", "content": f"{RAG_system_prompt}: {retrieved_data}"})
+            retrieved_data = rag_db.inference(queries=query_contents, top_k=RAG_top_k, cutoff=RAG_cutoff)
+            if retrieved_data is not None:
+                messages.append({"role": "user", "content": f"{RAG_system_prompt}: {retrieved_data}"})
 
         payload = {
             "model": self.model,

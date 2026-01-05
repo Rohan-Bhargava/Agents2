@@ -55,3 +55,8 @@ If that is not the end-goal or a desired outcome, higher temperature can help mi
 ## RAG
 
 A barebones RAG engine is also built in and has a demo file showing its usage.
+
+## Auto Router
+
+Using the RAG engine, prompts can be automatically routed to the best agent based on the agent's system prompt.
+The demo file, demo_AutoRouter.py, shows this.
